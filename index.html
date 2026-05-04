@@ -1,0 +1,1466 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle de Rotinas — Almoxarifado</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#F5F5F0;color:#1a1a18;font-size:14px}
+.hdr{padding:14px 20px 12px;border-bottom:1px solid #D3D1C7;background:linear-gradient(135deg,#E6F1FB 0%,#EEEDFE 50%,#E1F5EE 100%)}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.hdr-title{font-size:17px;font-weight:700;color:#0C447C}
+.hdr-sub{font-size:12px;color:#534AB7;margin-top:2px}
+.hdr-btns{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 15px;border-radius:20px;border:none;font-size:12px;font-weight:700;cursor:pointer;transition:opacity .15s;white-space:nowrap;text-decoration:none}
+.btn:hover{opacity:.82}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+@media(max-width:720px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{border-radius:10px;padding:11px 13px}
+.kpi-blue{background:#E6F1FB}.kpi-green{background:#E1F5EE}.kpi-amber{background:#FAEEDA}.kpi-red{background:#FCEBEB}.kpi-purple{background:#EEEDFE}
+.kpi-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.kpi-blue .kpi-lbl{color:#185FA5}.kpi-green .kpi-lbl{color:#0F6E56}.kpi-amber .kpi-lbl{color:#854F0B}.kpi-red .kpi-lbl{color:#A32D2D}.kpi-purple .kpi-lbl{color:#534AB7}
+.kpi-val{font-size:24px;font-weight:700;line-height:1}
+.kpi-blue .kpi-val{color:#0C447C}.kpi-green .kpi-val{color:#085041}.kpi-amber .kpi-val{color:#633806}.kpi-red .kpi-val{color:#791F1F}.kpi-purple .kpi-val{color:#3C3489}
+.kpi-sub{font-size:10px;margin-top:4px}
+.kpi-blue .kpi-sub{color:#185FA5}.kpi-green .kpi-sub{color:#0F6E56}.kpi-amber .kpi-sub{color:#854F0B}.kpi-red .kpi-sub{color:#A32D2D}.kpi-purple .kpi-sub{color:#534AB7}
+.prog-row{display:flex;align-items:center;gap:6px;margin-top:7px}
+.bar-bg{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.55);overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .6s}
+.tabs{display:flex;gap:2px;padding:10px 20px 0;background:#EBEBEA;border-bottom:1px solid #D3D1C7;flex-wrap:wrap}
+.tab{font-size:12px;padding:6px 13px;border-radius:10px 10px 0 0;border:none;background:none;cursor:pointer;color:#5F5E5A;font-weight:500;transition:all .15s}
+.tab:hover{background:#fff}
+.tab.active{font-weight:700;background:#fff;border:1px solid #D3D1C7;border-bottom:1px solid #fff;margin-bottom:-1px}
+.tab[data-t="dashboard"].active{color:#0C447C}
+.tab[data-t="tarefas"].active{color:#3C3489}
+.tab[data-t="alertas"].active{color:#791F1F}
+.tab[data-t="whatsapp"].active{color:#085041}
+.tab[data-t="colaboradores"].active{color:#633806}
+.tab[data-t="historico"].active{color:#72243E}
+.tab[data-t="nova"].active{color:#712B13}
+.sec{display:none;padding:16px 20px}.sec.active{display:block}
+.card{background:#fff;border:1px solid #D3D1C7;border-radius:12px;margin-bottom:12px;overflow:hidden}
+.card-hdr{padding:10px 14px;border-bottom:1px solid #D3D1C7;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:space-between;gap:6px}
+.badge{display:inline-flex;align-items:center;font-size:10px;padding:3px 8px;border-radius:10px;font-weight:700}
+.b-ok{background:#E1F5EE;color:#085041}.b-late{background:#FCEBEB;color:#791F1F}
+.b-pend{background:#FAEEDA;color:#633806}.b-wait{background:#F1EFE8;color:#444441}
+.b-fail{background:#FCEBEB;color:#A32D2D}.b-crit{background:#FCEBEB;color:#791F1F}
+.b-med{background:#FAEEDA;color:#633806}.b-baixa{background:#E1F5EE;color:#085041}
+.task-tbl{width:100%;border-collapse:collapse}
+.task-tbl th{background:#F1EFE8;font-size:10px;font-weight:700;color:#5F5E5A;text-transform:uppercase;letter-spacing:.04em;padding:8px 12px;text-align:left}
+.task-tbl td{padding:9px 12px;font-size:12px;border-bottom:1px solid #F1EFE8;vertical-align:middle}
+.task-tbl tr:last-child td{border-bottom:none}
+.task-tbl tr:hover td{background:#FAFAF8}
+.avatar{width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+.reg-btn{font-size:11px;padding:4px 10px;border-radius:8px;border:1px solid #D3D1C7;background:none;cursor:pointer;color:#5F5E5A;white-space:nowrap}
+.reg-btn:hover{background:#F1EFE8}
+.reg-btn.done{background:#E1F5EE;color:#085041;border-color:#9FE1CB}
+.alert-row{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid #D3D1C7}
+.alert-row:last-child{border-bottom:none}
+.recid-banner{display:flex;align-items:flex-start;gap:10px;padding:10px 14px;border-bottom:1px solid #D3D1C7;background:#EEEDFE}
+.recid-banner:last-child{border-bottom:none}
+.wap-btn{display:inline-flex;align-items:center;gap:5px;font-size:11px;padding:5px 11px;border-radius:8px;background:#E1F5EE;color:#085041;text-decoration:none;border:1px solid #9FE1CB;font-weight:700;white-space:nowrap}
+.wap-btn:hover{background:#9FE1CB}
+.wap-preview{background:#E8F5E9;border-radius:8px;padding:12px;font-size:11px;font-family:'Courier New',monospace;line-height:1.7;white-space:pre-wrap;border:1px solid #A5D6A7;color:#1B5E20;margin-top:8px}
+.wap-bubble{background:#DCF8C6;border-radius:14px 14px 4px 14px;padding:10px 14px;font-size:12px;line-height:1.6;white-space:pre-wrap;color:#1B4332;max-width:88%;margin-left:auto;border:1px solid #B9F0A0}
+.wap-time{font-size:10px;color:#888780;text-align:right;margin-top:4px;padding-right:4px}
+.wap-screen{background:#E2DDD9;border-radius:12px;padding:12px;min-height:100px}
+.wap-screen-hdr{background:#0F6E56;color:#fff;border-radius:10px 10px 0 0;padding:10px 14px;font-size:12px;font-weight:700;margin:-12px -12px 12px;display:flex;align-items:center;gap:8px}
+.mf{margin-bottom:12px}
+.mf label{font-size:11px;color:#5F5E5A;display:block;margin-bottom:4px;font-weight:700}
+.mf select,.mf input,.mf textarea{width:100%;padding:8px 10px;border:1px solid #D3D1C7;border-radius:8px;font-size:13px;background:#fff;color:#1a1a18;font-family:inherit}
+.mf select:focus,.mf input:focus,.mf textarea:focus{outline:none;border-color:#378ADD}
+.dias-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px}
+.dia-pill{display:inline-flex;align-items:center;gap:3px;padding:5px 10px;border-radius:18px;font-size:11px;font-weight:700;cursor:pointer;user-select:none;border:1px solid transparent}
+.dia-pill input{position:absolute;opacity:0;width:0;height:0}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center;padding:16px}
+.overlay.open{display:flex}
+.mbox{background:#fff;border-radius:14px;border:1px solid #D3D1C7;width:100%;max-width:440px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.15)}
+.mhdr{padding:14px 16px;border-bottom:1px solid #D3D1C7;display:flex;align-items:center;justify-content:space-between}
+.mtitle{font-size:14px;font-weight:700}
+.mclose{width:26px;height:26px;border-radius:50%;border:1px solid #D3D1C7;background:#fff;cursor:pointer;font-size:14px;color:#5F5E5A;display:flex;align-items:center;justify-content:center;font-weight:700}
+.mclose:hover{background:#F1EFE8}
+.mbody{padding:16px;max-height:70vh;overflow-y:auto}
+.mfooter{padding:12px 16px;border-top:1px solid #D3D1C7;display:flex;justify-content:flex-end;gap:8px;background:#FAFAF8}
+.btn-cancel{padding:7px 14px;border:1px solid #D3D1C7;border-radius:20px;background:#fff;cursor:pointer;font-size:12px;color:#5F5E5A;font-weight:700}
+.btn-cancel:hover{background:#F1EFE8}
+.btn-save{padding:7px 16px;border:none;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer}
+.info-box{border-radius:8px;padding:10px 12px;font-size:11px;line-height:1.6;margin-top:8px}
+.collab-tbl{width:100%;border-collapse:collapse}
+.collab-tbl th{background:#F1EFE8;font-size:10px;font-weight:700;color:#5F5E5A;text-transform:uppercase;letter-spacing:.04em;padding:8px 12px;text-align:left}
+.collab-tbl td{padding:9px 12px;font-size:12px;border-bottom:1px solid #F1EFE8;vertical-align:middle}
+.collab-tbl tr:last-child td{border-bottom:none}
+.hist-tbl{width:100%;border-collapse:collapse}
+.hist-tbl th{background:#F1EFE8;font-size:10px;font-weight:700;color:#5F5E5A;text-transform:uppercase;letter-spacing:.04em;padding:8px 12px;text-align:left}
+.hist-tbl td{padding:8px 12px;font-size:11px;border-bottom:1px solid #F1EFE8;vertical-align:middle}
+.hist-tbl tr:last-child td{border-bottom:none}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:640px){.grid-2{grid-template-columns:1fr}}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media(max-width:800px){.grid-3{grid-template-columns:1fr 1fr}}
+@media(max-width:500px){.grid-3{grid-template-columns:1fr}}
+.toast{position:fixed;bottom:20px;right:20px;border-radius:12px;padding:12px 16px;font-size:12px;z-index:500;display:none;max-width:320px;border:1px solid;box-shadow:0 4px 16px rgba(0,0,0,.15);font-weight:700}
+.toast.show{display:block}
+/* CHARTS */
+canvas{display:block}
+.chart-wrap{position:relative;width:100%;padding:12px 14px}
+.turno-bar{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #F1EFE8}
+.turno-bar:last-child{border-bottom:none}
+</style>
+</head>
+<body>
+
+<!-- CABECALHO -->
+<div class="hdr">
+  <div class="hdr-top">
+    <div>
+      <div class="hdr-title">Controle de Rotinas — Almoxarifado</div>
+      <div class="hdr-sub" id="clock">Carregando...</div>
+    </div>
+    <div class="hdr-btns">
+      <span class="badge b-ok" style="font-size:11px;padding:4px 10px">Sistema ativo</span>
+      <span id="sync-status" style="font-size:11px;padding:4px 10px;border-radius:10px;font-weight:700;background:#EEEDFE;color:#534AB7">Conectando...</span>
+      <button onclick="carregarDoSheets()" style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:20px;border:1px solid #9FE1CB;background:#E1F5EE;color:#085041;font-size:11px;font-weight:700;cursor:pointer" title="Sincronizar com Google Sheets">⟳ Sincronizar</button>
+      <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:4px 10px;border-radius:10px;font-weight:700;background:#E1F5EE;color:#085041">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="#085041"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.062.524 4.004 1.445 5.699L0 24l6.47-1.426A11.955 11.955 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.891 0-3.667-.5-5.2-1.375l-.373-.213-3.84.847.87-3.73-.234-.384A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+        WhatsApp ativo
+      </span>
+      <button class="btn" style="background:#EEEDFE;color:#3C3489" onclick="openReg(null)">+ Registrar tarefa</button>
+      <button class="btn" style="background:#FAECE7;color:#712B13" onclick="openNova()">+ Nova rotina</button>
+    </div>
+  </div>
+  <div class="kpis">
+    <div class="kpi kpi-blue"><div class="kpi-lbl">Total tarefas</div><div class="kpi-val" id="kpi-tot">—</div><div class="kpi-sub">Programadas hoje</div></div>
+    <div class="kpi kpi-green">
+      <div class="kpi-lbl">Execucao</div><div class="kpi-val" id="kpi-exec">—</div>
+      <div class="prog-row"><div class="bar-bg"><div class="bar-fill" id="prog-bar" style="background:#1D9E75;width:0%"></div></div><span style="font-size:10px;font-weight:700;color:#085041;min-width:28px;text-align:right" id="prog-pct">—</span></div>
+      <div class="kpi-sub" id="kpi-exec-sub">Meta: 90%</div>
+    </div>
+    <div class="kpi kpi-amber"><div class="kpi-lbl">Atrasos / Falhas</div><div class="kpi-val" id="kpi-at">—</div><div class="kpi-sub" id="kpi-at-sub">—</div></div>
+    <div class="kpi kpi-red"><div class="kpi-lbl">Criticas em risco</div><div class="kpi-val" id="kpi-crit">—</div><div class="kpi-sub">Zap para Helaine</div></div>
+    <div class="kpi kpi-purple"><div class="kpi-lbl">Reincidencias</div><div class="kpi-val" id="kpi-recid">—</div><div class="kpi-sub" id="kpi-recid-sub">—</div></div>
+  </div>
+  <!-- BARRA DE ALERTAS RAPIDOS NO CABECALHO -->
+  <div id="alert-bar" style="margin-top:10px;display:none;flex-direction:column;gap:4px"></div>
+</div>
+
+<!-- ABAS -->
+<div class="tabs">
+  <button class="tab active" data-t="dashboard" onclick="showTab('dashboard',this)">Dashboard</button>
+  <button class="tab" data-t="tarefas" onclick="showTab('tarefas',this)">Tarefas do dia</button>
+  <button class="tab" data-t="whatsapp" onclick="showTab('whatsapp',this)">WhatsApp</button>
+  <button class="tab" data-t="colaboradores" onclick="showTab('colaboradores',this)">Colaboradores</button>
+  <button class="tab" data-t="historico" onclick="showTab('historico',this)">Historico</button>
+  <button class="tab" data-t="nova" onclick="showTab('nova',this)">+ Nova rotina</button>
+</div>
+
+<!-- ===== DASHBOARD ===== -->
+<div id="sec-dashboard" class="sec active">
+
+  <!-- Linha 1: graficos principais -->
+  <div class="grid-3" style="margin-bottom:12px">
+
+    <!-- Grafico pizza execucao -->
+    <div class="card">
+      <div class="card-hdr" style="background:#E6F1FB;color:#0C447C">Execucao do dia</div>
+      <div class="chart-wrap" style="display:flex;flex-direction:column;align-items:center">
+        <canvas id="chart-pizza" width="160" height="160"></canvas>
+        <div id="pizza-legend" style="margin-top:10px;display:flex;flex-direction:column;gap:4px;width:100%"></div>
+      </div>
+    </div>
+
+    <!-- Grafico barras por colaborador -->
+    <div class="card">
+      <div class="card-hdr" style="background:#FAEEDA;color:#633806">Aderencia por colaborador — meta 90%</div>
+      <div class="chart-wrap">
+        <canvas id="chart-collab" width="260" height="180"></canvas>
+      </div>
+    </div>
+
+    <!-- Grafico barras empilhadas evolucao semanal -->
+    <div class="card">
+      <div class="card-hdr" style="background:#EEEDFE;color:#3C3489">Evolucao semanal — tarefas por status</div>
+      <div class="chart-wrap">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:10px">
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#1D9E75;display:inline-block"></span>Concluidas</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#EF9F27;display:inline-block"></span>Atrasadas</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#E24B4A;display:inline-block"></span>Falhas</span>
+        </div>
+        <div style="position:relative;width:100%;height:160px">
+        <canvas id="chart-evol" role="img" aria-label="Grafico de barras empilhadas mostrando concluidas, atrasadas e falhas por semana">Evolucao de tarefas por status ao longo das semanas.</canvas>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Linha 2: status por turno -->
+  <div class="card">
+    <div class="card-hdr" style="background:#E1F5EE;color:#085041">Status por turno</div>
+    <div id="turno-status" style="padding:10px 14px"></div>
+  </div>
+</div>
+
+<!-- ===== TAREFAS ===== -->
+<div id="sec-tarefas" class="sec">
+  <div class="card">
+    <div class="card-hdr" style="background:#EEEDFE;color:#3C3489">Rotinas do dia — <span id="hoje-lbl"></span></div>
+    <div style="overflow-x:auto">
+      <table class="task-tbl">
+        <thead><tr><th>Horario</th><th>Atividade</th><th>Responsavel</th><th>Backup</th><th>Turno</th><th>Crit.</th><th>Status</th><th>Acao</th></tr></thead>
+        <tbody id="task-list"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== WHATSAPP ===== -->
+<div id="sec-whatsapp" class="sec">
+  <div class="grid-2" style="margin-bottom:12px">
+    <div class="card">
+      <div class="card-hdr" style="background:#E1F5EE;color:#085041">Contatos e roteamento</div>
+      <div style="padding:14px">
+        <div style="background:#F1EFE8;border-radius:8px;padding:10px 12px;margin-bottom:10px">
+          <div style="font-size:10px;font-weight:700;color:#5F5E5A;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Supervisora</div>
+          <div style="font-size:13px;font-weight:700">Helaine Reis</div>
+          <div style="font-size:12px;color:#085041;margin-top:2px;font-weight:700">+55 19 95902510</div>
+          <div style="font-size:11px;color:#5F5E5A;margin-top:4px;line-height:1.5">Recebe: tarefas criticas, reincidencias e fechamento diario</div>
+        </div>
+        <div style="background:#F1EFE8;border-radius:8px;padding:10px 12px">
+          <div style="font-size:10px;font-weight:700;color:#5F5E5A;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Numero de Gestao</div>
+          <div style="font-size:13px;font-weight:700">Gestao de Ocorrencias</div>
+          <div style="font-size:12px;color:#085041;margin-top:2px;font-weight:700">+55 19 99160-2821</div>
+          <div style="font-size:11px;color:#5F5E5A;margin-top:4px;line-height:1.5">Recebe: qualquer atraso ou falha de qualquer colaborador</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr" style="background:#E1F5EE;color:#085041">Tipos de mensagem automatica</div>
+      <div style="padding:14px;display:flex;flex-direction:column;gap:8px">
+        <div style="background:#FAEEDA;border-radius:8px;padding:9px 11px;border-left:3px solid #BA7517"><div style="font-size:11px;font-weight:700;color:#633806">Atraso de tarefa</div><div style="font-size:10px;color:#854F0B;margin-top:2px">Para: +55 19 99160-2821</div></div>
+        <div style="background:#FCEBEB;border-radius:8px;padding:9px 11px;border-left:3px solid #E24B4A"><div style="font-size:11px;font-weight:700;color:#791F1F">Tarefa critica sem execucao</div><div style="font-size:10px;color:#A32D2D;margin-top:2px">Para: +55 19 95902510 (Helaine)</div></div>
+        <div style="background:#EEEDFE;border-radius:8px;padding:9px 11px;border-left:3px solid #7F77DD"><div style="font-size:11px;font-weight:700;color:#3C3489">Reincidencia detectada</div><div style="font-size:10px;color:#534AB7;margin-top:2px">Para: +55 19 95902510 (Helaine)</div></div>
+        <div style="background:#E1F5EE;border-radius:8px;padding:9px 11px;border-left:3px solid #1D9E75"><div style="font-size:11px;font-weight:700;color:#085041">Fechamento diario</div><div style="font-size:10px;color:#0F6E56;margin-top:2px">Para: ambos os numeros</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hdr" style="background:#E1F5EE;color:#085041">Preview das mensagens</div>
+    <div style="padding:14px">
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <button class="btn" style="background:#FAEEDA;color:#633806;font-size:11px;padding:6px 12px" onclick="previewWap('atraso')">Atraso</button>
+        <button class="btn" style="background:#FCEBEB;color:#791F1F;font-size:11px;padding:6px 12px" onclick="previewWap('critica')">Critica</button>
+        <button class="btn" style="background:#EEEDFE;color:#3C3489;font-size:11px;padding:6px 12px" onclick="previewWap('reincidencia')">Reincidencia</button>
+        <button class="btn" style="background:#E1F5EE;color:#085041;font-size:11px;padding:6px 12px" onclick="previewWap('fechamento')">Fechamento</button>
+      </div>
+      <div class="wap-screen" id="wap-screen">
+        <div class="wap-screen-hdr"><svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.062.524 4.004 1.445 5.699L0 24l6.47-1.426A11.955 11.955 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.891 0-3.667-.5-5.2-1.375l-.373-.213-3.84.847.87-3.73-.234-.384A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg><span>Sistema de Rotinas — Almoxarifado</span></div>
+        <div style="text-align:center;padding:20px 0;font-size:12px;color:#5F5E5A">Selecione um tipo de mensagem acima</div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hdr" style="background:#E1F5EE;color:#085041">Textos prontos — copie para integrar com Z-API / Twilio / TI</div>
+    <div style="padding:14px;display:flex;flex-direction:column;gap:10px" id="wap-templates"></div>
+  </div>
+  <div style="background:#FAEEDA;border-radius:10px;padding:14px;border:1px solid #FAC775;margin-top:4px">
+    <div style="font-size:12px;font-weight:700;color:#633806;margin-bottom:6px">Como ativar o disparo automatico</div>
+    <div style="font-size:11px;color:#854F0B;line-height:1.7">Solicite ao TI da Embrasa a integracao com <strong>Z-API</strong> (zapi.io) ou <strong>Evolution API</strong> (open-source). Os textos ja estao prontos acima. Para uma solucao rapida e sem custo de software, a Evolution API pode ser hospedada internamente pelo proprio TI.</div>
+  </div>
+</div>
+
+<!-- ===== COLABORADORES ===== -->
+<div id="sec-colaboradores" class="sec">
+  <div class="card">
+    <div class="card-hdr" style="background:#FAEEDA;color:#633806">Ranking e aderencia a meta — 90%</div>
+    <div style="overflow-x:auto">
+      <table class="collab-tbl">
+        <thead><tr><th>Colaborador</th><th>Backup em</th><th>Total reg.</th><th>Concluidas</th><th>Falhas</th><th>Aderencia</th><th>vs Meta</th></tr></thead>
+        <tbody id="collab-list"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== HISTORICO ===== -->
+<div id="sec-historico" class="sec">
+  <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+    <select id="hf-resp" onchange="renderHist()" style="padding:7px 10px;border:1px solid #D3D1C7;border-radius:8px;font-size:12px;background:#fff;color:#1a1a18">
+      <option value="">Todos os colaboradores</option>
+      <option>Randal</option><option>Rafael</option><option>Cleiton</option><option>Daniel</option>
+    </select>
+    <select id="hf-status" onchange="renderHist()" style="padding:7px 10px;border:1px solid #D3D1C7;border-radius:8px;font-size:12px;background:#fff;color:#1a1a18">
+      <option value="">Todos os status</option>
+      <option value="ok">Concluida</option><option value="late">Com atraso</option><option value="fail">Falha</option>
+    </select>
+    <select id="hf-turno" onchange="renderHist()" style="padding:7px 10px;border:1px solid #D3D1C7;border-radius:8px;font-size:12px;background:#fff;color:#1a1a18">
+      <option value="">Todos os turnos</option>
+      <option value="Manha">Manha</option><option value="Tarde">Tarde</option><option value="Noite">Noite</option><option value="Madrugada">Madrugada</option>
+    </select>
+  </div>
+  <div class="card">
+    <div class="card-hdr" style="background:#FBEAF0;color:#72243E" id="hist-hdr-title">Historico de execucoes</div>
+    <div style="overflow-x:auto">
+      <table class="hist-tbl">
+        <thead><tr><th>Data</th><th>Horario</th><th>Atividade</th><th>Responsavel</th><th>Turno</th><th>Status</th><th>Motivo</th><th>Zap</th><th>Observacao</th></tr></thead>
+        <tbody id="hist-list"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ===== NOVA ROTINA ===== -->
+<div id="sec-nova" class="sec">
+  <div class="card">
+    <div class="card-hdr" style="background:#FAECE7;color:#712B13">Adicionar nova rotina ao controle</div>
+    <div style="padding:16px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="mf" style="grid-column:1/-1"><label>Nome da atividade *</label><input type="text" id="n-nome" placeholder="Ex: Conferencia de NF"></div>
+        <div class="mf"><label>Horario inicio *</label><input type="text" id="n-hora-ini" placeholder="08:00"></div>
+        <div class="mf"><label>Horario fim *</label><input type="text" id="n-hora-fim" placeholder="09:00"></div>
+        <div class="mf"><label>Responsavel *</label><input type="text" id="n-resp" placeholder="Nome do colaborador"></div>
+        <div class="mf"><label>Backup</label><input type="text" id="n-subs" placeholder="Nome do backup"></div>
+        <div class="mf"><label>Turno</label>
+          <select id="n-turno"><option value="Manha">Manha (06h-14h)</option><option value="Tarde">Tarde (14h-22h)</option><option value="Noite">Noite (22h-06h)</option><option value="Madrugada">Madrugada (00h-06h)</option></select>
+        </div>
+        <div class="mf"><label>Criticidade *</label><select id="n-crit"><option>Critica</option><option>Media</option><option>Baixa</option></select></div>
+        <div class="mf" style="grid-column:1/-1"><label>WhatsApp do responsavel</label><input type="text" id="n-wap" placeholder="55 19 9XXXX-XXXX"></div>
+      </div>
+      <div class="mf"><label>Dias da semana *</label>
+        <div class="dias-row">
+          <label class="dia-pill" style="background:#EEEDFE;color:#3C3489"><input type="checkbox" value="Seg"> Segunda</label>
+          <label class="dia-pill" style="background:#E6F1FB;color:#0C447C"><input type="checkbox" value="Ter"> Terca</label>
+          <label class="dia-pill" style="background:#E1F5EE;color:#085041"><input type="checkbox" value="Qua"> Quarta</label>
+          <label class="dia-pill" style="background:#FAEEDA;color:#633806"><input type="checkbox" value="Qui"> Quinta</label>
+          <label class="dia-pill" style="background:#FAECE7;color:#712B13"><input type="checkbox" value="Sex"> Sexta</label>
+        </div>
+      </div>
+      <button onclick="addNova()" style="padding:8px 20px;border:1px solid #F5C4B3;border-radius:20px;background:#FAECE7;color:#712B13;font-size:13px;font-weight:700;cursor:pointer;margin-top:8px">Adicionar rotina</button>
+    </div>
+  </div>
+  <div class="card"><div class="card-hdr" style="background:#F1EFE8;color:#444441">Todas as rotinas cadastradas</div><div id="all-tasks"></div></div>
+</div>
+
+<!-- MODAL REGISTRAR -->
+<div class="overlay" id="modal-reg">
+  <div class="mbox">
+    <div class="mhdr" style="background:#EEEDFE">
+      <div>
+        <div class="mtitle" style="color:#3C3489">Registrar execucao de tarefa</div>
+        <div style="font-size:11px;color:#534AB7;margin-top:2px" id="r-relogio">—</div>
+      </div>
+      <button class="mclose" onclick="closeReg()">x</button>
+    </div>
+    <div class="mbody">
+      <!-- Painel de horario -->
+      <div id="r-horario-panel" style="display:none;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;line-height:1.6;border:1px solid"></div>
+      <!-- Justificativa especial (fora do prazo) -->
+      <div id="r-justif-field" style="display:none" class="mf">
+        <label style="color:#791F1F">Justificativa obrigatoria — registro fora do prazo *</label>
+        <textarea id="r-justif" rows="2" placeholder="Explique o motivo do registro tardio..."></textarea>
+      </div>
+      <div class="mf"><label>Atividade *</label><select id="r-task" onchange="onTaskChange()"></select></div>
+      <div class="mf" id="r-status-field"><label>Status *</label>
+        <select id="r-status" onchange="onStatusChange()">
+          <option value="ok">Concluida no prazo</option>
+          <option value="late">Concluida com atraso</option>
+          <option value="fail">Falha / Nao executada</option>
+        </select>
+      </div>
+      <div class="mf" id="motivo-field" style="display:none">
+        <label>Motivo da falha / atraso *</label>
+        <select id="r-motivo">
+          <option value="">Selecione o motivo</option>
+          <option value="recurso">Falta de recurso / material</option>
+          <option value="equipamento">Problema de equipamento</option>
+          <option value="sobrecarga">Sobrecarga operacional</option>
+          <option value="ausencia">Ausencia do responsavel</option>
+          <option value="outro">Outro (descreva abaixo)</option>
+        </select>
+      </div>
+      <div class="mf"><label>Observacao</label><textarea id="r-obs" rows="2" placeholder="Descreva detalhes da execucao ou ocorrencias..."></textarea></div>
+      <div id="wap-alert-info" style="display:none"></div>
+    </div>
+    <div class="mfooter">
+      <button class="btn-cancel" onclick="closeReg()">Cancelar</button>
+      <button class="btn-save" id="r-confirmar-btn" style="background:#EEEDFE;color:#3C3489" onclick="saveReg()">Confirmar registro</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOVA ROTINA -->
+<div class="overlay" id="modal-nova">
+  <div class="mbox">
+    <div class="mhdr" style="background:#FAECE7">
+      <div class="mtitle" style="color:#712B13">Nova rotina</div>
+      <button class="mclose" onclick="closeNova()">x</button>
+    </div>
+    <div class="mbody">
+      <div class="mf"><label>Nome da atividade *</label><input type="text" id="mn-nome" placeholder="Nome da atividade"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="mf"><label>Horario inicio *</label><input type="text" id="mn-hora-ini" placeholder="08:00"></div>
+        <div class="mf"><label>Horario fim *</label><input type="text" id="mn-hora-fim" placeholder="09:00"></div>
+        <div class="mf"><label>Responsavel *</label><input type="text" id="mn-resp" placeholder="Nome"></div>
+        <div class="mf"><label>Backup</label><input type="text" id="mn-subs" placeholder="Nome do backup"></div>
+        <div class="mf"><label>Turno</label><select id="mn-turno"><option value="Manha">Manha</option><option value="Tarde">Tarde</option><option value="Noite">Noite</option><option value="Madrugada">Madrugada</option></select></div>
+        <div class="mf"><label>Criticidade *</label><select id="mn-crit"><option>Critica</option><option>Media</option><option>Baixa</option></select></div>
+      </div>
+      <div class="mf"><label>WhatsApp responsavel</label><input type="text" id="mn-wap" placeholder="55 19 9XXXX-XXXX"></div>
+      <div class="mf"><label>Dias *</label>
+        <div class="dias-row">
+          <label class="dia-pill" style="background:#EEEDFE;color:#3C3489"><input type="checkbox" value="Seg"> Seg</label>
+          <label class="dia-pill" style="background:#E6F1FB;color:#0C447C"><input type="checkbox" value="Ter"> Ter</label>
+          <label class="dia-pill" style="background:#E1F5EE;color:#085041"><input type="checkbox" value="Qua"> Qua</label>
+          <label class="dia-pill" style="background:#FAEEDA;color:#633806"><input type="checkbox" value="Qui"> Qui</label>
+          <label class="dia-pill" style="background:#FAECE7;color:#712B13"><input type="checkbox" value="Sex"> Sex</label>
+        </div>
+      </div>
+    </div>
+    <div class="mfooter">
+      <button class="btn-cancel" onclick="closeNova()">Cancelar</button>
+      <button class="btn-save" style="background:#FAECE7;color:#712B13" onclick="saveNovaModal()">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ZAP OBRIGATORIO -->
+<div class="overlay" id="modal-zap">
+  <div class="mbox" style="max-width:420px">
+    <div class="mhdr" style="background:#FCEBEB">
+      <div>
+        <div class="mtitle" style="color:#791F1F">Notificacao obrigatoria</div>
+        <div style="font-size:11px;color:#A32D2D;margin-top:2px" id="zap-subtitle"></div>
+      </div>
+    </div>
+    <div class="mbody" style="padding:0">
+      <!-- Mensagem preview -->
+      <div style="background:#E8F5E9;border-bottom:1px solid #D3D1C7;padding:12px 16px">
+        <div style="font-size:10px;font-weight:700;color:#5F5E5A;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Mensagem que sera enviada</div>
+        <div id="zap-msg-preview" style="font-size:11px;font-family:'Courier New',monospace;color:#1B4332;line-height:1.6;white-space:pre-wrap;background:#DCF8C6;border-radius:10px 10px 3px 10px;padding:10px 12px;border:1px solid #B9F0A0"></div>
+        <div style="font-size:10px;color:#5F5E5A;margin-top:6px">Para: <strong id="zap-dest-label" style="color:#085041"></strong></div>
+      </div>
+      <!-- Instrucao -->
+      <div style="padding:12px 16px;background:#FFFBF0;border-bottom:1px solid #FAC775">
+        <div style="font-size:12px;color:#633806;line-height:1.5">
+          <strong>1.</strong> Clique em <strong>"Abrir WhatsApp"</strong> abaixo<br>
+          <strong>2.</strong> O WhatsApp abre com a mensagem pronta<br>
+          <strong>3.</strong> Clique em <strong>Enviar</strong> no WhatsApp<br>
+          <strong>4.</strong> Volte aqui e clique em <strong>"Confirmei o envio"</strong>
+        </div>
+      </div>
+    </div>
+    <div class="mfooter" style="flex-direction:column;gap:8px;align-items:stretch">
+      <!-- Botao principal - Abrir Whatsapp -->
+      <a id="zap-link" href="#" target="_blank" onclick="zapAberto()" style="display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;border-radius:10px;background:#1D9E75;color:#fff;text-decoration:none;font-weight:700;font-size:13px;border:none">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.062.524 4.004 1.445 5.699L0 24l6.47-1.426A11.955 11.955 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.891 0-3.667-.5-5.2-1.375l-.373-.213-3.84.847.87-3.73-.234-.384A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+        Abrir WhatsApp e enviar mensagem
+      </a>
+      <!-- Botao confirmacao - so aparece depois de clicar no Zap -->
+      <button id="zap-confirmar-btn" onclick="zapConfirmado()" style="display:none;padding:10px 16px;border-radius:10px;background:#E1F5EE;color:#085041;font-weight:700;font-size:12px;border:1px solid #9FE1CB;cursor:pointer">
+        Confirmei o envio da mensagem
+      </button>
+      <!-- Botao nao enviar - discreto, so aparece depois de abrir o Zap -->
+      <button id="zap-recusar-btn" onclick="zapNaoEnviado()" style="display:none;padding:7px 16px;border-radius:10px;background:#fff;color:#B4B2A9;font-size:11px;border:1px solid #D3D1C7;cursor:pointer">
+        Nao enviei — registrar nao conformidade
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const META = 90;
+const DATA_INICIO = new Date(2026, 3, 27); // 27/04/2026 — inicio com atividades do Daniel (madrugada)
+const WAP_SUP = '5519959025100';
+const WAP_GESTAO = '5519991602821';
+const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbz-Uuw2LoDVFGJIHknH_7IEOy0h5h67oB-ONnDgfyFPjKfe-1goqpoJZcMiOHZtX0jM/exec';
+
+const DOW_NAMES = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'];
+const DOW_FULL = ['Domingo','Segunda-feira','Terca-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sabado'];
+
+const CC = {
+  Randal:  {bg:'#EEEDFE',txt:'#3C3489',av:'RD',bar:'#7F77DD'},
+  Rafael:  {bg:'#E6F1FB',txt:'#0C447C',av:'RF',bar:'#378ADD'},
+  Cleiton: {bg:'#FAEEDA',txt:'#633806',av:'CL',bar:'#BA7517'},
+  Daniel:  {bg:'#E1F5EE',txt:'#085041',av:'DN',bar:'#1D9E75'},
+};
+function cc(n){return CC[n]||{bg:'#F1EFE8',txt:'#444441',av:n?n[0].toUpperCase():'?',bar:'#888780'};}
+
+const MOTIVOS = {recurso:'Falta de recurso',equipamento:'Equipamento',sobrecarga:'Sobrecarga',ausencia:'Ausencia',outro:'Outro','':`—`};
+
+// ===== TAREFAS (com horario inicio/fim e turno) =====
+let TAREFAS = [
+  {id:0, nome:'Ronda GLP, Lubrificantes e Solventes', horaIni:'08:00', horaFim:'09:30', dias:['Seg','Ter','Qua','Qui','Sex'], resp:'Randal',  subs:'Cleiton',        turno:'Manha',    crit:'Critica'},
+  {id:1, nome:'Baixas e Ajustes',                      horaIni:'09:30', horaFim:'10:00', dias:['Seg','Ter','Qua','Qui','Sex'], resp:'Randal',  subs:'Cleiton',        turno:'Manha',    crit:'Media'},
+  {id:2, nome:'Organizacao Pallet (Manha)',             horaIni:'08:00', horaFim:'09:00', dias:['Seg','Ter','Qua','Qui','Sex'], resp:'Cleiton', subs:'Randal',         turno:'Manha',    crit:'Media'},
+  {id:3, nome:'Organizacao Pallet (Tarde)',             horaIni:'14:00', horaFim:'15:00', dias:['Seg','Ter','Qua','Qui','Sex'], resp:'Cleiton', subs:'Rafael',         turno:'Tarde',    crit:'Media'},
+  {id:4, nome:'Inventario e Ressuprimento Pallet',      horaIni:'16:00', horaFim:'17:00', dias:['Seg','Ter','Qua','Qui','Sex'], resp:'Rafael',  subs:'Daniel',         turno:'Tarde',    crit:'Critica'},
+  {id:5, nome:'Conferencia SD1',                        horaIni:'20:00', horaFim:'21:00', dias:['Seg','Ter','Qua','Qui','Sex'], resp:'Rafael',  subs:'Daniel',         turno:'Noite',    crit:'Critica'},
+  {id:6, nome:'Ressuprimento MC',                       horaIni:'21:00', horaFim:'22:00', dias:['Seg','Ter','Qua','Qui','Sex'], resp:'Rafael',  subs:'Daniel',         turno:'Noite',    crit:'Critica'},
+  {id:7, nome:'Inventario Ciclico',                     horaIni:'01:30', horaFim:'02:30', dias:['Seg','Ter','Qua','Qui','Sex'], resp:'Daniel',  subs:'Cleiton, Rafael', turno:'Madrugada',crit:'Media'},
+  {id:8, nome:'Abast. Kanbam + Sep. Romaneios',         horaIni:'03:30', horaFim:'04:50', dias:['Seg','Ter','Qua','Qui','Sex'], resp:'Daniel',  subs:'Randal, Cleiton', turno:'Madrugada',crit:'Critica'},
+];
+
+let STATUSES = {};
+
+function hoje(){
+  return new Date();
+}
+
+function todayDia(){
+  const n = hoje();
+  // Madrugada (00:00-05:59): ainda pertence ao dia atual do calendario
+  return DOW_NAMES[n.getDay()];
+}
+
+function todayTasks(){
+  const n = hoje();
+  const h = n.getHours();
+  const dia = DOW_NAMES[n.getDay()];
+  // Na madrugada (00:00-05:59) mostra tarefas do dia atual E do dia anterior
+  // para que atividades de madrugada apareçam corretamente
+  if(h < 6){
+    const diaAnteriorIdx = (n.getDay() - 1 + 7) % 7;
+    const diaAnterior = DOW_NAMES[diaAnteriorIdx];
+    const tarefasMandrugada = TAREFAS.filter(t => t.turno === 'Madrugada' && t.dias.includes(dia));
+    const tarefasDia = TAREFAS.filter(t => t.turno !== 'Madrugada' && t.dias.includes(dia));
+    return [...tarefasMandrugada, ...tarefasDia];
+  }
+  if(!['Seg','Ter','Qua','Qui','Sex'].includes(dia)) return TAREFAS;
+  return TAREFAS.filter(t => t.dias.includes(dia));
+}
+
+function horaParaMin(h){
+  const [hh,mm] = h.split(':').map(Number);
+  return hh * 60 + mm;
+}
+
+function defSt(t){
+  const now = hoje();
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const fimMin = horaParaMin(t.horaFim);
+  const iniMin = horaParaMin(t.horaIni);
+  if(nowMin > fimMin + 30) return 'ok';
+  if(nowMin > fimMin) return 'pend';
+  if(nowMin >= iniMin) return 'pend';
+  return 'wait';
+}
+
+todayTasks().forEach(t => { STATUSES[t.id] = defSt(t); });
+
+let HIST = [
+  {dt:'27/04/2026', hora:'01:30-02:30', tarefa:'Inventario Ciclico', tid:7, resp:'Daniel', turno:'Madrugada', status:'ok', motivo:'', obs:'Primeiro registro — inicio do controle de rotinas', zap:'nao_aplicavel'},
+];
+let SHEETS_OK = false;
+
+// ===== GOOGLE SHEETS — SALVAR =====
+async function salvarNoSheets(registro){
+  try{
+    await fetch(SHEETS_URL, {
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        data:       registro.dt,
+        horario:    registro.hora,
+        atividade:  registro.tarefa,
+        responsavel:registro.resp,
+        turno:      registro.turno,
+        status:     slbl(registro.status),
+        motivo:     MOTIVOS[registro.motivo]||registro.motivo||'—',
+        observacao: registro.obs
+      })
+    });
+    SHEETS_OK = true;
+  } catch(e){
+    console.warn('Sheets offline, registro salvo localmente.',e);
+    SHEETS_OK = false;
+  }
+}
+
+// ===== GOOGLE SHEETS — CARREGAR =====
+async function carregarDoSheets(){
+  const statusEl = document.getElementById('sync-status');
+  try{
+    statusEl.textContent = 'Sincronizando...';
+    statusEl.style.color = '#534AB7';
+    const resp = await fetch(SHEETS_URL+'?t='+Date.now());
+    const json = await resp.json();
+    if(json.rows && json.rows.length > 1){
+      const rows = json.rows.slice(1); // pula cabecalho
+      HIST = rows
+        .filter(r => r[0] && r[2]) // precisa ter data e atividade
+        .map(r => {
+          const statusRaw = (r[5]||'').toLowerCase();
+          const statusMap = {'concluida':'ok','concluída':'ok','atrasada':'late','falha':'fail','pendente':'pend','aguardando':'wait'};
+          const status = statusMap[statusRaw] || 'ok';
+          // tenta encontrar tid pelo nome da atividade
+          const tFound = TAREFAS.find(t => t.nome === r[2]);
+          return {
+            dt:     r[0]||'',
+            hora:   r[1]||'',
+            tarefa: r[2]||'',
+            tid:    tFound ? tFound.id : -1,
+            resp:   r[3]||'',
+            turno:  r[4]||'',
+            status,
+            motivo: '',
+            obs:    r[7]||'—'
+          };
+        });
+      SHEETS_OK = true;
+      statusEl.textContent = 'Sincronizado com Google Sheets';
+      statusEl.style.color = '#085041';
+    } else {
+      statusEl.textContent = 'Planilha vazia — aguardando registros';
+      statusEl.style.color = '#633806';
+    }
+  } catch(e){
+    statusEl.textContent = 'Sem conexao — dados locais';
+    statusEl.style.color = '#791F1F';
+    console.warn('Nao foi possivel carregar do Sheets:',e);
+  }
+  renderAll();
+}
+
+// ===== UTIL =====
+function slbl(s){return{ok:'Concluida',late:'Atrasada',pend:'Pendente',wait:'Aguardando',fail:'Falha'}[s]||s;}
+function scls(s){return{ok:'b-ok',late:'b-late',pend:'b-pend',wait:'b-wait',fail:'b-fail'}[s]||'b-wait';}
+function critCls(c){return c==='Critica'?'b-crit':c==='Media'?'b-med':'b-baixa';}
+
+const turnoColors = {
+  Manha:    {bg:'#E6F1FB',txt:'#0C447C'},
+  Tarde:    {bg:'#FAEEDA',txt:'#633806'},
+  Noite:    {bg:'#EEEDFE',txt:'#3C3489'},
+  Madrugada:{bg:'#FBEAF0',txt:'#72243E'},
+};
+
+function wapSVG(fill){
+  return `<svg width="14" height="14" viewBox="0 0 24 24" fill="${fill||'#085041'}"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.062.524 4.004 1.445 5.699L0 24l6.47-1.426A11.955 11.955 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.891 0-3.667-.5-5.2-1.375l-.373-.213-3.84.847.87-3.73-.234-.384A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>`;
+}
+
+function wapLink(num, msg){return 'https://wa.me/'+num.replace(/\D/g,'')+`?text=${encodeURIComponent(msg)}`;}
+
+function buildWapMsg(type, data){
+  const d = hoje();
+  const dt = String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
+  const hr = String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  if(type==='atraso') return `⚠ *ALERTA DE ATRASO*\nAlmoxarifado — ${dt} ${hr}\n\nAtividade: *${data.nome}*\nHorario: ${data.horaIni} ate ${data.horaFim}\nResponsavel: ${data.resp}\nTurno: ${data.turno}\nCriticidade: ${data.crit}\n${data.subs?'Backup: '+data.subs:''}\n\nFavor executar ou informar o motivo.\n\n_Sistema de Controle de Rotinas — Embrasa_`;
+  if(type==='critica') return `🚨 *ATIVIDADE CRITICA SEM EXECUCAO*\nAlmoxarifado — ${dt} ${hr}\n\nAtividade: *${data.nome}*\nHorario: ${data.horaIni} ate ${data.horaFim}\nResponsavel: ${data.resp}\nTurno: ${data.turno}\n\n*Acao imediata necessaria.*\n${data.subs?'Backup notificado: '+data.subs:'Sem backup configurado'}\n\n_Sistema de Controle de Rotinas — Embrasa_`;
+  if(type==='reincidencia') return `🔴 *REINCIDENCIA DETECTADA*\nAlmoxarifado — ${dt}\n\nAtividade: *${data.nome}* falhou *${data.cnt}x* nesta semana.\nResponsavel: ${data.resp} | Turno: ${data.turno}\n\n*Problema sistematico — acao estrutural necessaria.*\n\n_Sistema de Controle de Rotinas — Embrasa_`;
+  if(type==='fechamento'){
+    const s = getStats();
+    return `📋 *FECHAMENTO DO DIA*\nAlmoxarifado — ${dt}\n\nTotal de atividades: ${s.total}\nConcluidas: ${s.done} (${s.pct}%)\nCom atraso: ${s.late}\nFalhas: ${s.fail}\nMeta: ${META}% — ${s.pct>=META?'✅ ATINGIDA':'❌ NAO ATINGIDA'}\n\n_Sistema de Controle de Rotinas — Embrasa_`;
+  }
+  return '';
+}
+
+function getReincidencias(){
+  const count = {};
+  HIST.forEach(h => { if(['late','fail'].includes(h.status)) count[h.tid] = (count[h.tid]||0)+1; });
+  return TAREFAS.filter(t => (count[t.id]||0) >= 2).map(t => ({...t, cnt:count[t.id]}));
+}
+
+function getStats(){
+  const tt = todayTasks();
+  const total = tt.length;
+  const done  = tt.filter(t => STATUSES[t.id]==='ok').length;
+  const late  = tt.filter(t => STATUSES[t.id]==='late').length;
+  const fail  = tt.filter(t => STATUSES[t.id]==='fail').length;
+  const pend  = tt.filter(t => ['pend','wait'].includes(STATUSES[t.id])).length;
+  const crit  = tt.filter(t => ['late','fail'].includes(STATUSES[t.id]) && t.crit==='Critica').length;
+  const recid = getReincidencias().length;
+  const pct   = total ? Math.round(done/total*100) : 0;
+  return {total,done,late,fail,pend,crit,recid,pct};
+}
+
+function getCollabStats(){
+  const s = {};
+  HIST.forEach(h => {
+    if(!s[h.resp]) s[h.resp] = {total:0,ok:0,late:0,fail:0};
+    s[h.resp].total++;
+    s[h.resp][h.status] = (s[h.resp][h.status]||0)+1;
+  });
+  return Object.entries(s).map(([n,c]) => ({name:n,...c, pct:c.total?Math.round(c.ok/c.total*100):100})).sort((a,b)=>b.pct-a.pct);
+}
+
+// ===== KPIs =====
+function renderKPIs(){
+  const s = getStats();
+  document.getElementById('kpi-tot').textContent  = s.total;
+  document.getElementById('kpi-exec').textContent = s.pct+'%';
+  const bar = document.getElementById('prog-bar');
+  bar.style.width = s.pct+'%';
+  bar.style.background = s.pct>=META ? '#1D9E75' : s.pct>=70 ? '#BA7517' : '#E24B4A';
+  document.getElementById('prog-pct').textContent = s.pct+'%';
+  document.getElementById('kpi-exec-sub').textContent = 'Meta: '+META+'% — '+(s.pct>=META?'Atingida!':'Abaixo');
+  document.getElementById('kpi-at').textContent    = s.late+s.fail;
+  document.getElementById('kpi-at-sub').textContent = s.late+' atraso(s) · '+s.fail+' falha(s)';
+  document.getElementById('kpi-crit').textContent  = s.crit;
+  document.getElementById('kpi-recid').textContent = s.recid;
+  document.getElementById('kpi-recid-sub').textContent = s.recid>0 ? s.recid+' recorrente(s)' : 'Nenhuma';
+}
+
+// ===== CHARTS =====
+let chartPizza, chartCollab, chartEvol;
+
+function drawChartPizza(){
+  const s = getStats();
+  const ctx = document.getElementById('chart-pizza').getContext('2d');
+  if(chartPizza) chartPizza.destroy();
+  chartPizza = new Chart(ctx, {
+    type:'doughnut',
+    data:{
+      labels:['Concluidas','Atrasadas','Falhas','Pendentes'],
+      datasets:[{
+        data:[s.done, s.late, s.fail, s.pend],
+        backgroundColor:['#1D9E75','#EF9F27','#E24B4A','#B4B2A9'],
+        borderWidth:2, borderColor:'#fff'
+      }]
+    },
+    options:{
+      responsive:false, plugins:{legend:{display:false}},
+      cutout:'68%',
+      animation:{duration:600}
+    }
+  });
+  const legendEl = document.getElementById('pizza-legend');
+  const items = [
+    {lbl:'Concluidas',val:s.done,col:'#1D9E75'},
+    {lbl:'Atrasadas', val:s.late,col:'#EF9F27'},
+    {lbl:'Falhas',    val:s.fail,col:'#E24B4A'},
+    {lbl:'Pendentes', val:s.pend,col:'#B4B2A9'},
+  ];
+  legendEl.innerHTML = items.map(i=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;font-size:11px">
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:2px;background:${i.col};flex-shrink:0"></span>${i.lbl}</span>
+      <strong style="color:${i.col}">${i.val}</strong>
+    </div>`).join('');
+}
+
+function drawChartCollab(){
+  const cs = getCollabStats();
+  const ctx = document.getElementById('chart-collab').getContext('2d');
+  if(chartCollab) chartCollab.destroy();
+  const chart = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels: cs.map(c=>c.name),
+      datasets:[
+        {label:'Aderencia (%)', data:cs.map(c=>c.pct), backgroundColor:cs.map(c=>cc(c.name).bar+'CC'), borderColor:cs.map(c=>cc(c.name).bar), borderWidth:1.5, borderRadius:6},
+        {label:'Meta (90%)', data:cs.map(()=>META), type:'line', borderColor:'#E24B4A', borderWidth:2, borderDash:[5,4], pointRadius:0, fill:false}
+      ]
+    },
+    options:{
+      responsive:false,
+      scales:{
+        y:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%',font:{size:10}},grid:{color:'#F1EFE8'}},
+        x:{ticks:{font:{size:11}},grid:{display:false}}
+      },
+      plugins:{legend:{labels:{font:{size:10},boxWidth:12}}}
+    }
+  });
+  chartCollab = chart;
+}
+
+function buildEvolData(){
+  const inicio = DATA_INICIO;
+  const semanas = ['Sem 1','Sem 2','Sem 3','Sem 4','Sem 5'];
+  const concl = [0,0,0,0,0];
+  const atras = [0,0,0,0,0];
+  const falha = [0,0,0,0,0];
+  HIST.forEach(h=>{
+    const parts = h.dt.split('/');
+    if(parts.length < 3) return;
+    const d = new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]));
+    const diffDays = Math.floor((d - inicio)/(1000*60*60*24));
+    if(diffDays < 0) return;
+    const semIdx = Math.min(Math.floor(diffDays/7), 4);
+    if(h.status==='ok')   concl[semIdx]++;
+    else if(h.status==='late') atras[semIdx]++;
+    else if(h.status==='fail') falha[semIdx]++;
+  });
+  // Marca semanas sem dados como null para nao mostrar barra vazia
+  for(let i=1;i<5;i++){
+    if(concl[i]+atras[i]+falha[i]===0){ concl[i]=null; atras[i]=null; falha[i]=null; }
+  }
+  return {semanas, concl, atras, falha};
+}
+
+function drawChartEvol(){
+  const ctx = document.getElementById('chart-evol').getContext('2d');
+  if(chartEvol) chartEvol.destroy();
+  const {semanas, concl, atras, falha} = buildEvolData();
+  chartEvol = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels: semanas,
+      datasets:[
+        {
+          label:'Concluidas',
+          data: concl,
+          backgroundColor:'#1D9E75CC',
+          borderColor:'#1D9E75',
+          borderWidth:1,
+          borderRadius:{topLeft:4,topRight:4,bottomLeft:0,bottomRight:0},
+          stack:'semana'
+        },
+        {
+          label:'Atrasadas',
+          data: atras,
+          backgroundColor:'#EF9F27CC',
+          borderColor:'#EF9F27',
+          borderWidth:1,
+          borderRadius:0,
+          stack:'semana'
+        },
+        {
+          label:'Falhas',
+          data: falha,
+          backgroundColor:'#E24B4ACC',
+          borderColor:'#E24B4A',
+          borderWidth:1,
+          borderRadius:0,
+          stack:'semana'
+        },
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      scales:{
+        x:{
+          ticks:{font:{size:10},color:'#5F5E5A'},
+          grid:{display:false}
+        },
+        y:{
+          beginAtZero:true,
+          ticks:{font:{size:10},color:'#5F5E5A',stepSize:2},
+          grid:{color:'#F1EFE8'},
+          stacked:true
+        }
+      },
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            footer: items=>{
+              const tot = items.reduce((s,i)=>s+(i.raw||0),0);
+              const ok  = items.find(i=>i.dataset.label==='Concluidas')?.raw||0;
+              return tot>0 ? `Aderencia: ${Math.round(ok/tot*100)}%` : '';
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+function drawCharts(){
+  drawChartPizza();
+  drawChartCollab();
+  drawChartEvol();
+}
+
+// ===== STATUS POR TURNO =====
+function renderTurnoStatus(){
+  const turnos = ['Manha','Tarde','Noite','Madrugada'];
+  const labels = {Manha:'Manha (06h-14h)',Tarde:'Tarde (14h-22h)',Noite:'Noite (22h-06h)',Madrugada:'Madrugada (00h-06h)'};
+  let html = '';
+  turnos.forEach(turno => {
+    const tt = todayTasks().filter(t => t.turno===turno);
+    if(!tt.length) return;
+    const done = tt.filter(t=>STATUSES[t.id]==='ok').length;
+    const bad  = tt.filter(t=>['late','fail'].includes(STATUSES[t.id])).length;
+    const pct  = Math.round(done/tt.length*100);
+    const col  = turnoColors[turno];
+    const barCol = pct>=META?'#1D9E75':pct>=70?'#BA7517':'#E24B4A';
+    html += `<div class="turno-bar">
+      <span style="font-size:11px;font-weight:700;min-width:140px;background:${col.bg};color:${col.txt};padding:2px 8px;border-radius:8px">${labels[turno]}</span>
+      <div style="flex:1;height:8px;background:#F1EFE8;border-radius:4px;overflow:hidden"><div style="height:100%;border-radius:4px;background:${barCol};width:${pct}%"></div></div>
+      <span style="font-size:11px;font-weight:700;color:${barCol};min-width:34px;text-align:right">${pct}%</span>
+      <span style="font-size:10px;color:#5F5E5A;min-width:70px;text-align:right">${done}/${tt.length} OK${bad>0?' · '+bad+' alerta':''}</span>
+    </div>`;
+  });
+  document.getElementById('turno-status').innerHTML = html || '<div style="font-size:12px;color:#5F5E5A;padding:8px 0">Nenhuma tarefa hoje.</div>';
+}
+
+
+function alertRowHtml(t, s){
+  const isCrit = t.crit==='Critica';
+  const destNum = isCrit ? WAP_SUP : WAP_GESTAO;
+  const destLbl = isCrit ? 'Helaine (+55 19 95902510)' : 'Gestao (+55 19 99160-2821)';
+  const msg  = buildWapMsg(isCrit?'critica':'atraso', t);
+  const link = wapLink(destNum, msg);
+  const tc   = turnoColors[t.turno]||{bg:'#F1EFE8',txt:'#444441'};
+  return `<div class="alert-row" style="border-left:4px solid ${isCrit?'#E24B4A':'#EF9F27'}">
+    <div style="flex:1">
+      <div style="font-size:13px;font-weight:700">${t.nome} — ${slbl(s)}</div>
+      <div style="font-size:11px;color:#5F5E5A;margin-top:3px">${t.resp} · ${t.horaIni}-${t.horaFim} · <span style="background:${tc.bg};color:${tc.txt};padding:1px 6px;border-radius:6px;font-size:10px;font-weight:700">${t.turno}</span></div>
+      <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+        <span style="font-size:10px;background:${isCrit?'#FCEBEB':'#FAEEDA'};color:${isCrit?'#791F1F':'#633806'};padding:2px 8px;border-radius:8px;font-weight:700">Zap: ${destLbl}</span>
+        ${t.subs?`<span style="font-size:10px;background:#FAEEDA;color:#633806;padding:2px 8px;border-radius:8px;font-weight:700">Backup: ${t.subs}</span>`:''}
+      </div>
+    </div>
+    <a href="${link}" target="_blank" class="wap-btn">${wapSVG()} Enviar Zap</a>
+  </div>`;
+}
+
+
+function renderAlertBar(){
+  const bar = document.getElementById('alert-bar');
+  if(!bar) return;
+  const bad   = todayTasks().filter(t=>['late','fail'].includes(STATUSES[t.id]));
+  const recid = getReincidencias();
+  const naoConf = HIST.filter(h=>h.zap==='nao_enviado');
+  const items = [];
+
+  bad.forEach(t=>{
+    const isCrit = t.crit==='Critica';
+    const msg  = buildWapMsg(isCrit?'critica':'atraso', t);
+    const link = wapLink(isCrit ? WAP_SUP : WAP_GESTAO, msg);
+    items.push({
+      bg:isCrit?'rgba(252,235,235,.85)':'rgba(250,238,218,.85)',
+      brd:isCrit?'#E24B4A':'#EF9F27',
+      txt:isCrit?'#791F1F':'#633806',
+      ico:'!',
+      label:`${t.nome} — ${slbl(STATUSES[t.id])} · ${t.resp} · ${t.horaIni}-${t.horaFim}`,
+      link, btnLabel:'Enviar Zap'
+    });
+  });
+
+  recid.forEach(t=>{
+    const msg  = buildWapMsg('reincidencia', t);
+    const link = wapLink(WAP_SUP, msg);
+    items.push({
+      bg:'rgba(238,237,254,.85)', brd:'#7F77DD', txt:'#3C3489',
+      ico:'↺',
+      label:`Reincidencia: ${t.nome} — ${t.cnt}x esta semana · ${t.resp}`,
+      link, btnLabel:'Zap Helaine'
+    });
+  });
+
+  // Nao conformidades — zap nao enviado
+  naoConf.forEach(h=>{
+    const msg = `🚨 *NAO CONFORMIDADE*\nAlmoxarifado — ${h.dt}\n\n${h.resp} registrou falha em "${h.tarefa}" mas NAO enviou a notificacao obrigatoria.\n\n_Sistema de Controle de Rotinas — Embrasa_`;
+    const link = wapLink(WAP_SUP, msg);
+    items.push({
+      bg:'rgba(252,235,235,.95)', brd:'#791F1F', txt:'#791F1F',
+      ico:'✕',
+      label:`NAO CONFORMIDADE: ${h.resp} nao enviou Zap — ${h.tarefa} (${h.dt})`,
+      link, btnLabel:'Alertar Helaine'
+    });
+  });
+
+  if(!items.length){ bar.style.display='none'; return; }
+  bar.style.display='flex';
+  bar.innerHTML = items.map(i=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;background:${i.bg};border-left:3px solid ${i.brd}">
+      <span style="font-size:13px;font-weight:900;color:${i.brd};width:16px;text-align:center;flex-shrink:0">${i.ico}</span>
+      <span style="font-size:11px;font-weight:700;color:${i.txt};flex:1">${i.label}</span>
+      <a href="${i.link}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:3px 9px;border-radius:7px;background:rgba(255,255,255,.8);color:${i.txt};text-decoration:none;font-weight:700;border:1px solid ${i.brd};white-space:nowrap;flex-shrink:0">${wapSVG(i.txt)} ${i.btnLabel}</a>
+    </div>`).join('');
+}
+
+
+function renderTasks(){
+  const tt = todayTasks();
+  const n = hoje();
+  document.getElementById('hoje-lbl').textContent = DOW_FULL[n.getDay()]+', '+String(n.getDate()).padStart(2,'0')+'/'+String(n.getMonth()+1).padStart(2,'0')+'/'+n.getFullYear();
+  document.getElementById('task-list').innerHTML = tt.map(t=>{
+    const s = STATUSES[t.id];
+    const c = cc(t.resp);
+    const tc = turnoColors[t.turno]||{bg:'#F1EFE8',txt:'#444441'};
+    const bc = s==='ok'?'#1D9E75':['late','fail'].includes(s)?'#E24B4A':'#EF9F27';
+    return `<tr style="border-left:4px solid ${bc}">
+      <td style="white-space:nowrap;font-weight:700;color:#5F5E5A">${t.horaIni}<br><span style="font-size:10px;color:#B4B2A9">${t.horaFim}</span></td>
+      <td><strong>${t.nome}</strong></td>
+      <td><div style="display:flex;align-items:center;gap:5px"><div class="avatar" style="background:${c.bg};color:${c.txt}">${c.av}</div><span style="font-weight:700">${t.resp}</span></div></td>
+      <td style="font-size:11px;color:#5F5E5A">${t.subs||'—'}</td>
+      <td><span style="font-size:10px;font-weight:700;background:${tc.bg};color:${tc.txt};padding:2px 7px;border-radius:8px">${t.turno}</span></td>
+      <td><span class="badge ${critCls(t.crit)}">${t.crit}</span></td>
+      <td><span class="badge ${scls(s)}">${slbl(s)}</span></td>
+      <td><button class="reg-btn ${s==='ok'?'done':''}" onclick="openReg(${t.id})">${s==='ok'?'✓ Registrado':'Registrar'}</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderCollab(){
+  const cs = getCollabStats();
+  document.getElementById('collab-list').innerHTML = cs.map((c,i)=>{
+    const ok=c.pct>=META, warn=c.pct>=70;
+    const col = ok?{bg:'#E1F5EE',txt:'#085041',bar:'#1D9E75',lbl:'Acima da meta'}:warn?{bg:'#FAEEDA',txt:'#633806',bar:'#BA7517',lbl:'Atencao'}:{bg:'#FCEBEB',txt:'#791F1F',bar:'#E24B4A',lbl:'Abaixo da meta'};
+    const cv = cc(c.name);
+    const subs = TAREFAS.filter(t=>t.subs&&t.subs.includes(c.name)).map(t=>t.nome);
+    const worst = i===cs.length-1 && cs.length>1 && c.pct<META;
+    return `<tr style="${worst?'background:#FFF5F5;':''}">
+      <td>
+        <div style="display:flex;align-items:flex-start;gap:8px">
+          <div class="avatar" style="background:${cv.bg};color:${cv.txt}">${cv.av}</div>
+          <div><div style="font-size:12px;font-weight:700">${c.name}${worst?' <span style="font-size:10px;background:#FCEBEB;color:#791F1F;padding:1px 6px;border-radius:6px">Maior dificuldade</span>':''}</div></div>
+        </div>
+      </td>
+      <td style="font-size:11px;color:#5F5E5A">${subs.length ? subs.join('<br>') : '—'}</td>
+      <td style="text-align:center;font-weight:700">${c.total}</td>
+      <td style="text-align:center;color:#085041;font-weight:700">${c.ok||0}</td>
+      <td style="text-align:center;color:#791F1F;font-weight:700">${(c.late||0)+(c.fail||0)}</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="flex:1;height:7px;background:#F1EFE8;border-radius:4px;overflow:hidden"><div style="height:100%;border-radius:4px;background:${col.bar};width:${c.pct}%"></div></div>
+          <span style="font-size:11px;font-weight:700;color:${col.txt};min-width:32px">${c.pct}%</span>
+        </div>
+      </td>
+      <td><span class="badge" style="background:${col.bg};color:${col.txt}">${col.lbl}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function zapBadge(zap, status){
+  if(!['late','fail'].includes(status)) return '<span style="font-size:10px;color:#B4B2A9">—</span>';
+  if(zap==='enviado')       return '<span style="font-size:10px;font-weight:700;background:#E1F5EE;color:#085041;padding:2px 7px;border-radius:7px">Enviado</span>';
+  if(zap==='nao_enviado')   return '<span style="font-size:10px;font-weight:700;background:#FCEBEB;color:#791F1F;padding:2px 7px;border-radius:7px">NAO ENVIADO</span>';
+  if(zap==='pendente')      return '<span style="font-size:10px;font-weight:700;background:#FAEEDA;color:#633806;padding:2px 7px;border-radius:7px">Pendente</span>';
+  return '<span style="font-size:10px;color:#B4B2A9">—</span>';
+}
+
+function renderHist(){
+  const fr = document.getElementById('hf-resp').value;
+  const fs = document.getElementById('hf-status').value;
+  const ft = document.getElementById('hf-turno').value;
+  const rows = [...HIST].filter(h=>
+    (!fr||h.resp===fr) && (!fs||h.status===fs) && (!ft||h.turno===ft)
+  ).reverse();
+  const c = cc;
+  document.getElementById('hist-list').innerHTML = rows.map(h=>{
+    const cv = c(h.resp);
+    const tc = turnoColors[h.turno]||{bg:'#F1EFE8',txt:'#444441'};
+    const rowBg = h.zap==='nao_enviado' ? 'background:#FFF5F5;' : '';
+    return `<tr style="${rowBg}">
+      <td style="white-space:nowrap;color:#5F5E5A">${h.dt}</td>
+      <td style="color:#5F5E5A;white-space:nowrap">${h.hora}</td>
+      <td style="font-weight:700">${h.tarefa}${h.zap==='nao_enviado'?'<br><span style="font-size:10px;color:#791F1F;font-weight:700">NAO CONFORMIDADE</span>':''}</td>
+      <td><div style="display:flex;align-items:center;gap:5px"><div class="avatar" style="background:${cv.bg};color:${cv.txt};width:22px;height:22px;font-size:9px">${cv.av}</div><span style="font-size:11px;font-weight:700">${h.resp}</span></div></td>
+      <td><span style="font-size:10px;font-weight:700;background:${tc.bg};color:${tc.txt};padding:2px 6px;border-radius:7px">${h.turno}</span></td>
+      <td><span class="badge ${scls(h.status)}">${slbl(h.status)}</span></td>
+      <td style="font-size:11px;color:#5F5E5A">${MOTIVOS[h.motivo]||'—'}</td>
+      <td>${zapBadge(h.zap, h.status)}</td>
+      <td style="font-size:11px;color:#5F5E5A">${h.obs||'—'}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="9" style="text-align:center;padding:16px;color:#5F5E5A">Nenhum registro encontrado.</td></tr>';
+}
+
+function renderAllTasks(){
+  document.getElementById('all-tasks').innerHTML = TAREFAS.map(t=>{
+    const c = cc(t.resp);
+    const tc = turnoColors[t.turno]||{bg:'#F1EFE8',txt:'#444441'};
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid #F1EFE8;flex-wrap:wrap;gap:6px">
+      <div>
+        <strong style="font-size:12px">${t.horaIni}-${t.horaFim} — ${t.nome}</strong>
+        <span class="avatar" style="background:${c.bg};color:${c.txt};width:22px;height:22px;font-size:9px;margin-left:6px">${c.av}</span>
+        <span style="font-size:11px;font-weight:700;margin-left:3px">${t.resp}</span>
+        ${t.subs?`<span style="font-size:10px;background:#FAEEDA;color:#633806;padding:1px 6px;border-radius:7px;margin-left:5px;font-weight:700">Backup: ${t.subs}</span>`:''}
+        <span style="font-size:10px;font-weight:700;background:${tc.bg};color:${tc.txt};padding:1px 6px;border-radius:7px;margin-left:5px">${t.turno}</span>
+        <span style="font-size:11px;color:#5F5E5A;margin-left:5px">${t.dias.join('/')}</span>
+      </div>
+      <span class="badge ${critCls(t.crit)}">${t.crit}</span>
+    </div>`;
+  }).join('');
+}
+
+function previewWap(type){
+  const demo = {nome:'Conferencia SD1',resp:'Rafael',horaIni:'20:00',horaFim:'21:00',crit:'Critica',subs:'Daniel',turno:'Noite',cnt:2};
+  const msg  = buildWapMsg(type, demo);
+  const isSup = ['critica','reincidencia','fechamento'].includes(type);
+  const num  = isSup ? WAP_SUP : WAP_GESTAO;
+  const numLbl = isSup ? '+55 19 95902510 (Helaine)' : '+55 19 99160-2821 (Gestao)';
+  const link = wapLink(num, msg);
+  document.getElementById('wap-screen').innerHTML = `
+    <div class="wap-screen-hdr">${wapSVG('#fff')} <span>Sistema de Rotinas — Almoxarifado</span></div>
+    <div style="font-size:10px;color:#5F5E5A;margin-bottom:10px;text-align:center">Para: ${numLbl}</div>
+    <div class="wap-bubble">${msg.replace(/\*(.*?)\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}</div>
+    <div class="wap-time">${String(new Date().getHours()).padStart(2,'0')}:${String(new Date().getMinutes()).padStart(2,'0')} ✓✓</div>
+    <div style="text-align:center;margin-top:14px">
+      <a href="${link}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;padding:9px 20px;border-radius:20px;background:#1D9E75;color:#fff;text-decoration:none;font-weight:700;font-size:12px">${wapSVG('#fff')} Abrir no WhatsApp</a>
+    </div>`;
+}
+
+function renderWapTemplates(){
+  const types = [
+    {key:'atraso',     lbl:'Atraso de atividade',       dest:'+55 19 99160-2821',       bg:'#FAEEDA',txt:'#633806'},
+    {key:'critica',    lbl:'Atividade critica',          dest:'+55 19 95902510 (Helaine)',bg:'#FCEBEB',txt:'#791F1F'},
+    {key:'reincidencia',lbl:'Reincidencia detectada',   dest:'+55 19 95902510 (Helaine)',bg:'#EEEDFE',txt:'#3C3489'},
+    {key:'fechamento', lbl:'Fechamento diario',          dest:'Ambos os numeros',         bg:'#E1F5EE',txt:'#085041'},
+  ];
+  const demo = {nome:'Conferencia SD1',resp:'Rafael',horaIni:'20:00',horaFim:'21:00',crit:'Critica',subs:'Daniel',turno:'Noite',cnt:2};
+  document.getElementById('wap-templates').innerHTML = types.map(tp=>`
+    <div style="border:1px solid #D3D1C7;border-radius:10px;overflow:hidden">
+      <div style="padding:8px 12px;background:${tp.bg};display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:12px;font-weight:700;color:${tp.txt}">${tp.lbl}</span>
+        <span style="font-size:10px;color:${tp.txt}">Para: ${tp.dest}</span>
+      </div>
+      <div class="wap-preview">${buildWapMsg(tp.key,demo)}</div>
+    </div>`).join('');
+}
+
+// ===== MODAL REGISTRAR =====
+// ===== VALIDACAO DE HORARIO =====
+function verificarHorario(t){
+  if(!t) return {status:'ok', bloqueado:false};
+  const now  = hoje();
+  const nowMin = now.getHours()*60 + now.getMinutes();
+  const iniMin = horaParaMin(t.horaIni);
+  const fimMin = horaParaMin(t.horaFim);
+  const diffMin = nowMin - fimMin;
+
+  if(nowMin < iniMin){
+    // Antes do horario
+    const falta = iniMin - nowMin;
+    const h = Math.floor(falta/60), m = falta%60;
+    return {
+      status:'antes',
+      bloqueado:true,
+      msg:`Esta atividade ainda nao iniciou. Inicio previsto: ${t.horaIni}. Faltam ${h>0?h+'h ':''} ${m}min.`,
+      bg:'#FAEEDA', brd:'#EF9F27', txt:'#633806', icone:'⏳'
+    };
+  }
+  if(nowMin >= iniMin && nowMin <= fimMin){
+    // Dentro do horario
+    return {
+      status:'ok',
+      bloqueado:false,
+      msg:`Dentro do horario previsto (${t.horaIni} — ${t.horaFim}). Registro permitido.`,
+      bg:'#E1F5EE', brd:'#1D9E75', txt:'#085041', icone:'✓',
+      autoStatus:'ok'
+    };
+  }
+  if(diffMin > 0 && diffMin <= 120){
+    // Ate 2h depois — atraso aceitavel
+    const h = Math.floor(diffMin/60), m = diffMin%60;
+    return {
+      status:'late',
+      bloqueado:false,
+      msg:`Horario encerrado ha ${h>0?h+'h ':''} ${m}min (previsto ate ${t.horaFim}). Sera registrado com ATRASO automaticamente.`,
+      bg:'#FAEEDA', brd:'#EF9F27', txt:'#633806', icone:'⚠',
+      autoStatus:'late'
+    };
+  }
+  if(diffMin > 120){
+    // Mais de 2h — fora do prazo, exige justificativa
+    const h = Math.floor(diffMin/60), m = diffMin%60;
+    return {
+      status:'foraprazo',
+      bloqueado:false,
+      exigeJustif:true,
+      msg:`Registro muito tardio: ${h>0?h+'h ':''} ${m}min apos o encerramento (${t.horaFim}). Justificativa obrigatoria.`,
+      bg:'#FCEBEB', brd:'#E24B4A', txt:'#791F1F', icone:'!',
+      autoStatus:'late'
+    };
+  }
+  return {status:'ok', bloqueado:false};
+}
+
+function aplicarValidacaoHorario(t){
+  const v = verificarHorario(t);
+  const painel = document.getElementById('r-horario-panel');
+  const justifField = document.getElementById('r-justif-field');
+  const btnConfirmar = document.getElementById('r-confirmar-btn');
+  const statusSel = document.getElementById('r-status');
+
+  if(!v.msg){
+    painel.style.display = 'none';
+    justifField.style.display = 'none';
+    btnConfirmar.disabled = false;
+    btnConfirmar.style.opacity = '1';
+    return;
+  }
+
+  // Mostra painel de horario
+  painel.style.display = 'block';
+  painel.style.background = v.bg;
+  painel.style.borderColor = v.brd;
+  painel.style.color = v.txt;
+  painel.innerHTML = `<strong style="font-size:14px">${v.icone}</strong> ${v.msg}`;
+
+  // Bloqueio total (antes do horario)
+  if(v.bloqueado){
+    btnConfirmar.disabled = true;
+    btnConfirmar.style.opacity = '0.4';
+    btnConfirmar.title = 'Aguarde o horario da atividade';
+    document.getElementById('r-status-field').style.display = 'none';
+  } else {
+    btnConfirmar.disabled = false;
+    btnConfirmar.style.opacity = '1';
+    btnConfirmar.title = '';
+    document.getElementById('r-status-field').style.display = 'block';
+    // Define status automaticamente
+    if(v.autoStatus){
+      statusSel.value = v.autoStatus;
+      onStatusChange();
+    }
+    // Exige justificativa se muito atrasado
+    justifField.style.display = v.exigeJustif ? 'block' : 'none';
+  }
+}
+
+function onTaskChange(){
+  const tid = parseInt(document.getElementById('r-task').value);
+  const t   = TAREFAS.find(x=>x.id===tid);
+  aplicarValidacaoHorario(t);
+  updateWapInfo(t, document.getElementById('r-status').value);
+}
+
+function onStatusChange(){
+  const s   = document.getElementById('r-status').value;
+  const show = ['late','fail'].includes(s);
+  document.getElementById('motivo-field').style.display = show ? 'block' : 'none';
+  const tid = parseInt(document.getElementById('r-task').value);
+  const t   = TAREFAS.find(x=>x.id===tid);
+  updateWapInfo(t, s);
+}
+
+function updateWapInfo(t, s){
+  const el = document.getElementById('wap-alert-info');
+  if(!t || !['late','fail'].includes(s)){el.style.display='none';return;}
+  const isCrit = t.crit==='Critica';
+  const dest = isCrit ? '+55 19 95902510 (Helaine)' : '+55 19 99160-2821 (Gestao)';
+  el.style.display='block';
+  el.innerHTML=`<div class="info-box" style="background:${isCrit?'#FCEBEB':'#E1F5EE'};border:1px solid ${isCrit?'#F7C1C1':'#9FE1CB'}">
+    <strong style="color:${isCrit?'#791F1F':'#085041'}">Zap sera enviado para: ${dest}</strong>
+    ${t.subs?`<br><span style="font-size:11px;color:#633806">Backup <strong>${t.subs}</strong> tambem sera notificado.</span>`:''}
+  </div>`;
+}
+
+function openReg(id){
+  const now = hoje();
+  const sel = document.getElementById('r-task');
+  // Filtra apenas tarefas do dia
+  const tt = todayTasks();
+  sel.innerHTML = tt.map(t=>`<option value="${t.id}"${id===t.id?' selected':''}>${t.horaIni}-${t.horaFim} — ${t.nome} (${t.resp})</option>`).join('');
+  document.getElementById('r-obs').value    = '';
+  document.getElementById('r-motivo').value = '';
+  document.getElementById('r-status').value = 'ok';
+  document.getElementById('r-justif').value = '';
+  document.getElementById('motivo-field').style.display    = 'none';
+  document.getElementById('wap-alert-info').style.display  = 'none';
+  document.getElementById('r-status-field').style.display  = 'block';
+  // Relogio no cabecalho do modal
+  document.getElementById('r-relogio').textContent =
+    'Horario atual: '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+  // Aplica validacao para a tarefa pre-selecionada
+  if(id !== null){
+    const t = TAREFAS.find(x=>x.id===id);
+    aplicarValidacaoHorario(t);
+  } else {
+    const firstId = parseInt(sel.value);
+    const t = TAREFAS.find(x=>x.id===firstId);
+    aplicarValidacaoHorario(t);
+  }
+  document.getElementById('modal-reg').classList.add('open');
+}
+function closeReg(){document.getElementById('modal-reg').classList.remove('open');}
+
+let _zapRegistro = null;
+let _zapLink     = null;
+let _zapAberto   = false;
+
+function saveReg(){
+  const tid    = parseInt(document.getElementById('r-task').value);
+  const sv     = document.getElementById('r-status').value;
+  const motivo = document.getElementById('r-motivo').value;
+  const obs    = document.getElementById('r-obs').value || '—';
+  const justif = document.getElementById('r-justif').value.trim();
+  const t = TAREFAS.find(x=>x.id===tid);
+
+  // Bloqueia se antes do horario
+  const v = verificarHorario(t);
+  if(v.bloqueado){
+    toast('Registro nao permitido — atividade ainda nao iniciou.','#FAEEDA','#633806');
+    return;
+  }
+
+  // Exige justificativa se muito atrasado
+  if(v.exigeJustif && !justif){
+    toast('Informe a justificativa para registro tardio.','#FCEBEB','#791F1F');
+    document.getElementById('r-justif').focus();
+    return;
+  }
+
+  if(['late','fail'].includes(sv) && !motivo){
+    toast('Selecione o motivo da falha / atraso.','#FAEEDA','#633806');
+    return;
+  }
+
+  STATUSES[tid] = sv;
+  const d = hoje();
+  const dtStr = String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
+  const obsFinal = justif ? `[Registro tardio: ${justif}] ${obs}` : obs;
+  const registro = {dt:dtStr, hora:t.horaIni+'-'+t.horaFim, tarefa:t.nome, tid, resp:t.resp, turno:t.turno, status:sv, motivo, obs:obsFinal, zap:'pendente'};
+  HIST.push(registro);
+  _zapRegistro = registro;
+  salvarNoSheets(registro);
+  closeReg();
+  if(['late','fail'].includes(sv)){
+    const isCrit = t.crit==='Critica';
+    const msg    = buildWapMsg(isCrit?'critica':'atraso', t);
+    const dest   = isCrit ? WAP_SUP : WAP_GESTAO;
+    const num    = isCrit ? '+55 19 95902510 (Helaine)' : '+55 19 99160-2821 (Gestao)';
+    _zapLink  = wapLink(dest, msg);
+    _zapAberto = false;
+    document.getElementById('zap-subtitle').textContent = t.nome + ' — ' + slbl(sv);
+    document.getElementById('zap-msg-preview').textContent = msg;
+    document.getElementById('zap-dest-label').textContent = num;
+    document.getElementById('zap-link').href = _zapLink;
+    document.getElementById('zap-confirmar-btn').style.display = 'none';
+    document.getElementById('zap-recusar-btn').style.display   = 'none';
+    document.getElementById('modal-zap').classList.add('open');
+  } else {
+    registro.zap = 'nao_aplicavel';
+    toast('Registro salvo no Google Sheets!','#E1F5EE','#085041', null);
+  }
+  renderAll();
+}
+
+function zapAberto(){
+  _zapAberto = true;
+  setTimeout(()=>{
+    document.getElementById('zap-confirmar-btn').style.display = 'block';
+    document.getElementById('zap-recusar-btn').style.display   = 'block';
+    document.getElementById('zap-link').style.background = '#0F6E56';
+    document.getElementById('zap-link').textContent = ''; // limpa e reescreve
+    document.getElementById('zap-link').innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.062.524 4.004 1.445 5.699L0 24l6.47-1.426A11.955 11.955 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.891 0-3.667-.5-5.2-1.375l-.373-.213-3.84.847.87-3.73-.234-.384A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg> WhatsApp aberto — clique em Enviar la';
+  }, 800);
+}
+
+function zapConfirmado(){
+  if(_zapRegistro) _zapRegistro.zap = 'enviado';
+  document.getElementById('modal-zap').classList.remove('open');
+  toast('Zap confirmado e registrado!','#E1F5EE','#085041', null);
+  renderAll();
+}
+
+function zapNaoEnviado(){
+  if(_zapRegistro){
+    _zapRegistro.zap = 'nao_enviado';
+    // Salva nao conformidade no Sheets
+    salvarNoSheets({
+      dt:      _zapRegistro.dt,
+      hora:    _zapRegistro.hora,
+      tarefa:  _zapRegistro.tarefa + ' [NAO CONFORMIDADE — Zap nao enviado]',
+      resp:    _zapRegistro.resp,
+      turno:   _zapRegistro.turno,
+      status:  'fail',
+      motivo:  'ausencia',
+      obs:     'Responsavel registrou falha mas optou por NAO enviar notificacao WhatsApp'
+    });
+  }
+  document.getElementById('modal-zap').classList.remove('open');
+  toast('Nao conformidade registrada — supervisora sera notificada.','#FCEBEB','#791F1F', wapLink(WAP_SUP, '🚨 *NAO CONFORMIDADE*\nAlmoxarifado\n\nO colaborador ' + (_zapRegistro?.resp||'') + ' registrou falha na atividade "' + (_zapRegistro?.tarefa||'') + '" mas optou por NAO enviar a notificacao obrigatoria.\n\n_Sistema de Controle de Rotinas — Embrasa_'));
+  renderAll();
+}
+
+// ===== MODAL NOVA ROTINA =====
+function openNova(){document.getElementById('modal-nova').classList.add('open');}
+function closeNova(){document.getElementById('modal-nova').classList.remove('open');}
+
+function saveNovaModal(){
+  const nome    = document.getElementById('mn-nome').value.trim();
+  const horaIni = document.getElementById('mn-hora-ini').value.trim();
+  const horaFim = document.getElementById('mn-hora-fim').value.trim();
+  const resp    = document.getElementById('mn-resp').value.trim();
+  const subs    = document.getElementById('mn-subs').value.trim();
+  const turno   = document.getElementById('mn-turno').value;
+  const crit    = document.getElementById('mn-crit').value;
+  const wap     = document.getElementById('mn-wap').value.trim();
+  const dias    = Array.from(document.querySelectorAll('#modal-nova input[type=checkbox]:checked')).map(c=>c.value);
+  if(!nome||!horaIni||!horaFim||!resp||!dias.length){toast('Preencha os campos obrigatorios.','#FAEEDA','#633806');return;}
+  const nid = Math.max(...TAREFAS.map(t=>t.id))+1;
+  TAREFAS.push({id:nid,nome,horaIni,horaFim,dias,resp,subs,turno,wap,crit});
+  STATUSES[nid]='wait';
+  ['mn-nome','mn-hora-ini','mn-hora-fim','mn-resp','mn-subs','mn-wap'].forEach(i=>document.getElementById(i).value='');
+  document.querySelectorAll('#modal-nova input[type=checkbox]').forEach(c=>c.checked=false);
+  closeNova();
+  toast('Nova rotina adicionada!','#FAECE7','#712B13');
+  renderAll();
+}
+
+function addNova(){
+  const nome    = document.getElementById('n-nome').value.trim();
+  const horaIni = document.getElementById('n-hora-ini').value.trim();
+  const horaFim = document.getElementById('n-hora-fim').value.trim();
+  const resp    = document.getElementById('n-resp').value.trim();
+  const subs    = document.getElementById('n-subs').value.trim();
+  const turno   = document.getElementById('n-turno').value;
+  const crit    = document.getElementById('n-crit').value;
+  const wap     = document.getElementById('n-wap').value.trim();
+  const dias    = Array.from(document.querySelectorAll('#sec-nova input[type=checkbox]:checked')).map(c=>c.value);
+  if(!nome||!horaIni||!horaFim||!resp||!dias.length){toast('Preencha nome, horarios, responsavel e ao menos um dia.','#FAEEDA','#633806');return;}
+  const nid = Math.max(...TAREFAS.map(t=>t.id))+1;
+  TAREFAS.push({id:nid,nome,horaIni,horaFim,dias,resp,subs,turno,wap,crit});
+  STATUSES[nid]='wait';
+  ['n-nome','n-hora-ini','n-hora-fim','n-resp','n-subs','n-wap'].forEach(i=>document.getElementById(i).value='');
+  document.querySelectorAll('#sec-nova input[type=checkbox]').forEach(c=>c.checked=false);
+  toast('Nova rotina adicionada!','#FAECE7','#712B13');
+  renderAll();
+}
+
+// ===== TABS =====
+function showTab(id,btn){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(id==='dashboard' || id==='colaboradores') setTimeout(drawCharts,50);
+}
+
+[['modal-reg',closeReg],['modal-nova',closeNova]].forEach(([id,fn])=>{
+  document.getElementById(id).addEventListener('click',function(e){if(e.target===this)fn();});
+});
+
+// ===== TOAST =====
+function toast(msg, bg, txt, link){
+  const el = document.getElementById('toast');
+  el.style.background = bg; el.style.color = txt; el.style.borderColor = txt;
+  if(link) el.innerHTML = `${msg} <a href="${link}" target="_blank" style="color:${txt};font-weight:700;text-decoration:underline;margin-left:6px">Abrir Zap</a>`;
+  else el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),5000);
+}
+
+// ===== CLOCK =====
+function updateClock(){
+  const n = hoje();
+  const dias = ['Domingo','Segunda-feira','Terca-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sabado'];
+  document.getElementById('clock').textContent =
+    dias[n.getDay()]+', '+String(n.getDate()).padStart(2,'0')+'/'+String(n.getMonth()+1).padStart(2,'0')+'/'+n.getFullYear()+' — '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0');
+}
+
+// ===== RENDER ALL =====
+function renderAll(){
+  renderKPIs();
+  renderAlertBar();
+  renderTurnoStatus();
+  renderTasks();
+  renderCollab();
+  renderHist();
+  renderAllTasks();
+  renderWapTemplates();
+  drawCharts();
+}
+
+updateClock();
+setInterval(updateClock, 30000);
+setInterval(carregarDoSheets, 5 * 60 * 1000);
+
+// Define data inicial dinamicamente no cabecalho do historico
+const _d = DATA_INICIO;
+const _dtFmt = String(_d.getDate()).padStart(2,'0')+'/'+String(_d.getMonth()+1).padStart(2,'0')+'/'+_d.getFullYear();
+const _hdrEl = document.getElementById('hist-hdr-title');
+if(_hdrEl) _hdrEl.textContent = 'Historico de execucoes — a partir de '+_dtFmt;
+
+renderAll();
+carregarDoSheets();
+</script>
+</body>
+</html>
